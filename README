@@ -1,0 +1,44 @@
+Usage: jell [<start-path> [<out-path> [<obj-path>]]]
+       jell [-h|--help]
+
+Create a single `.janet` file from multiple files.
+
+Parameters:
+
+  <start-path>                 path to starting file
+  <out-path>                   path to output file
+  <obj-path>                   path to temp directory
+
+Defaults:
+
+  <start-path>                 src/main.janet
+  <out-path>                   j.out
+  <obj-path>                   obj
+
+Options:
+
+  -h, --help                   show this output
+
+Configuration (optional):
+
+  .jell.jdn                    configuration file
+
+Example Invocations:
+
+  Create a single `.janet` file from multiple files:
+
+  $ jell src/main.janet output.janet
+
+  Same but use `tmp/` as an intermediate file directory:
+
+  $ jell src/main.janet output.janet tmp
+
+  With a suitable configuration file:
+
+  $ jell
+
+Example `.jell.jdn` content:
+
+  {:start-path "src/main.janet"
+   :out-path "j.out"
+   :obj-path "obj"}
