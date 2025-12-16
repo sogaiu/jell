@@ -1,47 +1,18 @@
+(import ./common :prefix "")
+(import ./jipper :prefix "")
 (import ./utils :prefix "")
 
-# XXX: a hack -- could reuse parts of a better peg
-(def l/import-grammar
-  ~(sequence :s* "("
-             :s* "import"
-             :s+
-             # target item
-             (choice (sequence `"`
-                               (capture
-                                 (some
-                                   (if-not (set ` \t\r\n\0\f\v"`) 1)))
-                               `"`)
-                     (capture (some (if-not (set " \t\r\n\0\f\v)") 1))))
-             # the rest
-             (choice ")"
-                     (sequence :s+
-                               (any (if-not ")" 1))
-                               ")"))))
-
-(comment
-
-  (peg/match l/import-grammar "(import ./pegs)")
-  # =>
-  @["./pegs"]
-
-  (peg/match l/import-grammar `(import ./pegs :prefix "")`)
-  # =>
-  @["./pegs"]
-
-  (peg/match l/import-grammar `(import "./pegs")`)
-  # =>
-  @["./pegs"]
-
-  )
-
-# create single file of source from a starting janet file by:
+# create single file of source from appropriately modified set of
+# files (see the code in prepare), beginning with a starting janet
+# file by:
 #
-# 1. starting at in-path, read line by line recording the content in
-#    out-path unless the line is an import form.
+# 1. create a zipper from in-path's content, then traverse to the
+#    right, recording the corresponding source code to out-path unless
+#    the encountered zloc has a node representing an import form.
 #
-# 2. if an import form is encountered, don't record the line in
-#    out-path, instead if the file it refers to has not been visited,
-#    visit the file and continue recursively.
+# 2. if an import form is encountered, don't record the form in
+#    out-path, instead if the file the import form refers to has not
+#    been visited, visit the file and continue recursively.
 (defn l/link
   [in-path out-path]
   # assumes paths are full paths...
@@ -61,11 +32,19 @@
         (when (in seen a-path) (break))
         #
         (put seen a-path true)
-        (with [in-file (file/open a-path :r)]
-          (loop [line :iterate (file/read in-file :line)]
-            (if-let [[name-path] (peg/match l/import-grammar line)]
-              (helper (string name-path ".janet"))
-              (file/write out-file line)))))
+        (var zloc
+          (try (-> (slurp a-path)
+                   j/par
+                   j/zip-down)
+            ([e] (errorf "failed to prepare zloc from: %s" a-path))))
+        (while zloc
+          (def cur-node (j/node zloc))
+          (if (c/is-import? zloc)
+            (let [i-tbl (c/analyze-import cur-node)]
+              (helper (string (get i-tbl :path) ".janet")))
+            (file/write out-file (j/gen cur-node)))
+          (set zloc (j/right zloc))))
+      #
       (helper file-path)
       (file/flush out-file))))
 

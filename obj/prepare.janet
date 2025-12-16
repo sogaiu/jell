@@ -1,3 +1,4 @@
+(import ./common :prefix "")
 (import ./jipper :prefix "")
 
 (defn p/valid-sym-name?
@@ -77,44 +78,6 @@
   #
   sym-zlocs)
 
-(defn p/analyze-import
-  [node]
-  (def parsed
-    (try (parse (j/gen node))
-      ([e] (errorf "failed to parse node: %n" node))))
-  (assertf (tuple? parsed) "expected tuple, found: %n: for: %n"
-           (type parsed) parsed)
-  #
-  (table :path (string (get parsed 1))
-         ;(tuple/slice parsed 2)))
-
-(comment
-
-  (p/analyze-import [:tuple @{:bc 1 :bl 1 :ec 27 :el 1}
-                   [:symbol @{:bc 2 :bl 1 :ec 8 :el 1} "import"]
-                   [:whitespace @{:bc 8 :bl 1 :ec 9 :el 1} " "]
-                   [:symbol @{:bc 9 :bl 1 :ec 15 :el 1} "./args"]
-                   [:whitespace @{:bc 15 :bl 1 :ec 16 :el 1} " "]
-                   [:keyword @{:bc 16 :bl 1 :ec 23 :el 1} ":prefix"]
-                   [:whitespace @{:bc 23 :bl 1 :ec 24 :el 1} " "]
-                   [:string @{:bc 24 :bl 1 :ec 26 :el 1} "\"\""]])
-  # =>
-  @{:path "./args" :prefix ""}
-
-  (p/analyze-import [:tuple @{:bc 1 :bl 1 :ec 23 :el 1}
-                   [:whitespace @{:bc 2 :bl 1 :ec 3 :el 1} " "]
-                   [:symbol @{:bc 3 :bl 1 :ec 9 :el 1} "import"]
-                   [:whitespace @{:bc 9 :bl 1 :ec 10 :el 1} " "]
-                   [:symbol @{:bc 10 :bl 1 :ec 16 :el 1} "./args"]
-                   [:whitespace @{:bc 16 :bl 1 :ec 17 :el 1} " "]
-                   [:keyword @{:bc 17 :bl 1 :ec 20 :el 1} ":as"]
-                   [:whitespace @{:bc 20 :bl 1 :ec 21 :el 1} " "]
-                   [:symbol @{:bc 21 :bl 1 :ec 22 :el 1} "a"]])
-  # =>
-  @{:as 'a :path "./args"}
-
-  )
-
 (defn p/tweak-import-forms
   [zloc]
   (var cur-zloc zloc)
@@ -124,7 +87,7 @@
                         [:tuple _ [:symbol _ "import"]]
                         cur-zloc)
                i-node (j/node i-zloc)]
-      (def i-tbl (p/analyze-import i-node))
+      (def i-tbl (c/analyze-import i-node))
       (assertf (get i-tbl :path)
                "import form lacks a path: %n" i-tbl)
       (set cur-zloc (j/replace cur-zloc
