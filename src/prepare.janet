@@ -39,6 +39,7 @@
            :array :bracket-array
            :struct :table]))
 
+# XXX: does not handle arbitrarily nested destructuring
 (defn analyze-defish
   [acc a-zloc]
   (when-let [b-zloc (j/right-skip-wsc a-zloc)]
