@@ -11,7 +11,7 @@
   Usage: jell [<start-path> [<out-path> [<obj-path>]]]
          jell [-h|--help]
 
-  Create a single `.janet` file from multiple files.
+  Create a single `.janet` file from multiple files [1].
 
   Parameters:
 
@@ -43,7 +43,11 @@
 
     $ jell src/main.janet output.janet tmp
 
-    With a suitable configuration file:
+    Create file, if a suitable configuration file exists:
+
+    $ jell
+
+    Without a suitable configuration file, show usage:
 
     $ jell
 
@@ -52,6 +56,11 @@
     {:start-path "src/main.janet"
      :out-path "j.out"
      :obj-path "obj"}
+
+  ---
+
+  [1] There are a fair number of restrictions on the
+      type of Janet code that can be handled.
   ``)
 
 ########################################################################
