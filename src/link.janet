@@ -40,7 +40,13 @@
         (while zloc
           (def cur-node (j/node zloc))
           (if (c/is-import? zloc)
-            (let [i-tbl (c/analyze-import cur-node)]
+            (let [i-tbl (c/analyze-import cur-node)
+                  commented (-> zloc
+                                (j/insert-child [:whitespace {} " "])
+                                (j/insert-child [:symbol {} "comment"])
+                                j/node
+                                j/gen)]
+              (file/write out-file commented "\n")
               (helper (string (get i-tbl :path) ".janet")))
             (file/write out-file (j/gen cur-node)))
           (set zloc (j/right zloc))))

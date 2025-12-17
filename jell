@@ -1,5 +1,6 @@
 #! /usr/bin/env janet
 
+(comment import ./args :prefix "")
 (defn a/parse-args
   [args]
   (def the-args (array ;args))
@@ -58,6 +59,9 @@
   (merge opts default-opts))
 
 
+(comment import ./link :prefix "")
+(comment import ./common :prefix "")
+(comment import ./jipper :prefix "")
 # bl - begin line
 # bc - begin column
 # el - end line
@@ -2213,6 +2217,7 @@
   )
 
 
+(comment import ./utils :prefix "")
 (defn u/maybe-dump
   [& args]
   (assertf (even? (length args))
@@ -2477,7 +2482,9 @@
   )
 
 
+(comment import ./jipper :prefix "")
 
+(comment import ./utils :prefix "")
 
 
 # create single file of source from appropriately modified set of
@@ -2518,7 +2525,13 @@
         (while zloc
           (def cur-node (j/node zloc))
           (if (c/is-import? zloc)
-            (let [i-tbl (c/analyze-import cur-node)]
+            (let [i-tbl (c/analyze-import cur-node)
+                  commented (-> zloc
+                                (j/insert-child [:whitespace {} " "])
+                                (j/insert-child [:symbol {} "comment"])
+                                j/node
+                                j/gen)]
+              (file/write out-file commented "\n")
               (helper (string (get i-tbl :path) ".janet")))
             (file/write out-file (j/gen cur-node)))
           (set zloc (j/right zloc))))
@@ -2527,7 +2540,10 @@
       (file/flush out-file))))
 
 
+(comment import ./prepare :prefix "")
+(comment import ./common :prefix "")
 
+(comment import ./jipper :prefix "")
 
 
 (defn p/valid-sym-name?
@@ -2694,8 +2710,12 @@
   in-out-path)
 
 
+(comment import ./study :prefix "")
+(comment import ./common :prefix "")
 
+(comment import ./jipper :prefix "")
 
+(comment import ./utils :prefix "")
 
 
 (defn s/find-files-and-imports
@@ -2775,6 +2795,7 @@
   prefixes)
 
 
+(comment import ./utils :prefix "")
 
 
 (def usage
