@@ -46,9 +46,14 @@
           (set cur-zloc (j/df-next i-zloc))
           (def i-node (j/node i-zloc))
           (def i-stats (c/analyze-import i-node))
+          (assertf (not= true (get i-stats :export))
+                   "import with :export true in %s not supported: %n"
+                   a-path (j/gen i-node))
           (def i-path (get i-stats :path))
           (assertf (string/has-prefix? "./" i-path)
                    "path should start with `./`, but found: %s" i-path)
+          (assertf (= 1 (length (string/find-all "/" i-path)))
+                   "only sibling files allowed: %s" i-path)
           (def j-file (os/realpath (string i-path ".janet")))
           (def prefix
             (cond
