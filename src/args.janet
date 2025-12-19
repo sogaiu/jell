@@ -41,6 +41,9 @@
   (when (nil? (get opts :out-path))
     (put opts :out-path (dyn :out-path "j.out")))
   #
+  (when (nil? (get opts :flycheck))
+    (put opts :flycheck (dyn :flycheck true)))
+  #
   (when-let [start-path (get the-args 0)]
     (put opts :start-path start-path)
     (array/remove the-args 0))

@@ -110,12 +110,13 @@
     (when (not bs-land) (os/stat start-path :permissions)))
   (put opts :start-file-perm perm)
   # study the input files starting at start-path
-  (flycheck start-path)
+  (when (get opts :flycheck) (flycheck start-path))
   (def prefixes (s/study start-path))
   (def [in-dir in-name] (u/split-path start-path))
-  (eachp [path _] prefixes
-    (def ipath (string in-dir sep path ".janet"))
-    (flycheck ipath))
+  (when (get opts :flycheck)
+    (eachp [path _] prefixes
+      (def ipath (string in-dir sep path ".janet"))
+      (flycheck ipath)))
   # prepare imported files: rename names and tweak import forms
   (p/prepare-imported in-dir obj-path prefixes opts)
   # prepare starting file: tweak import forms
