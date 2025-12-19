@@ -36,6 +36,13 @@
                  (j/search-from cur-zloc |(match (j/node $) [:tuple]
                                             (when (c/is-import? $)
                                               $))))
+          # warn about non-top-level imports
+          (when (<= 2 (length (j/path i-zloc)))
+            (def [_ {:bl bl} _] (j/node i-zloc))
+            # issue might arise because there might be an expectation
+            # of using the return value
+            (eprintf "non-top-level import in %s at line: %d" a-path bl))
+          #
           (set cur-zloc (j/df-next i-zloc))
           (def i-node (j/node i-zloc))
           (def i-stats (c/analyze-import i-node))
