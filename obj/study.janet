@@ -62,6 +62,7 @@
 
 (defn s/study
   [start-path]
+  (u/maybe-dump :call "study" :start-path start-path)
   (def files-and-imports (s/find-files-and-imports start-path))
   (u/maybe-dump :files-and-imports files-and-imports)
   #

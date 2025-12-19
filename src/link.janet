@@ -15,6 +15,7 @@
 #    been visited, visit the file and continue recursively.
 (defn link
   [in-path out-path]
+  (u/maybe-dump :call "link" :in-path in-path :out-path out-path)
   # assumes paths are full paths...
   # XXX: could check if we had abspath?
   (def [dir-path file-path] (u/split-path in-path))

@@ -1,5 +1,6 @@
 (import ./common :prefix "")
 (import ./jipper :prefix "")
+(import ./utils :prefix "")
 
 (defn p/valid-sym-name?
   [sym-name]
@@ -106,6 +107,7 @@
 
 (defn p/prepare
   [prefix in-path out-path]
+  (u/maybe-dump :call "prepare" :in-path in-path :out-path out-path)
   (def prefix-str (string prefix "/"))
   #
   (def src (slurp in-path))
@@ -138,6 +140,9 @@
 
 (defn p/prepare-imported
   [in-dir obj-path prefixes opts]
+  (u/maybe-dump :call "prepare-imported"
+                :in-dir in-dir :obj-path obj-path
+                :prefixes prefixes :opts opts)
   (def {:sep sep} opts)
   (eachp [path prefix] prefixes
     (def fname (string path ".janet"))
@@ -147,6 +152,9 @@
 
 (defn p/prepare-start
   [start-path in-name obj-path opts]
+  (u/maybe-dump :call "prepare-start"
+                :start-path start-path :in-name in-name
+                :obj-path obj-path :opts opts)
   (def {:sep sep :start-file-perm perm} opts)
   (def in-src (slurp start-path))
   (def in-tree (j/par in-src))

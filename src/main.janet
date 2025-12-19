@@ -109,8 +109,6 @@
   (def perm
     (when (not bs-land) (os/stat start-path :permissions)))
   (put opts :start-file-perm perm)
-  (u/maybe-dump :stage "study" :start-path start-path
-                :out-path out-path :obj-path obj-path)
   # study the input files starting at start-path
   (flycheck start-path)
   (def prefixes (s/study start-path))
@@ -118,15 +116,11 @@
   (eachp [path _] prefixes
     (def ipath (string in-dir sep path ".janet"))
     (flycheck ipath))
-  (u/maybe-dump :stage "prepare" :prefixes prefixes
-                :in-dir in-dir :in-name in-name
-                :obj-path obj-path)
   # prepare imported files: rename names and tweak import forms
   (p/prepare-imported in-dir obj-path prefixes opts)
   # prepare starting file: tweak import forms
   (def in-path (p/prepare-start start-path in-name obj-path opts))
   # link
-  (u/maybe-dump :stage "link" :in-path in-path :out-path out-path)
   (l/link in-path out-path)
   (when (not bs-land)
     (os/chmod out-path perm)))

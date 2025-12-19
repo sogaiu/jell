@@ -2500,6 +2500,7 @@
 #    been visited, visit the file and continue recursively.
 (defn l/link
   [in-path out-path]
+  (u/maybe-dump :call "link" :in-path in-path :out-path out-path)
   # assumes paths are full paths...
   # XXX: could check if we had abspath?
   (def [dir-path file-path] (u/split-path in-path))
@@ -2544,6 +2545,8 @@
 (comment import ./common :prefix "")
 
 (comment import ./jipper :prefix "")
+
+(comment import ./utils :prefix "")
 
 
 (defn p/valid-sym-name?
@@ -2651,6 +2654,7 @@
 
 (defn p/prepare
   [prefix in-path out-path]
+  (u/maybe-dump :call "prepare" :in-path in-path :out-path out-path)
   (def prefix-str (string prefix "/"))
   #
   (def src (slurp in-path))
@@ -2683,6 +2687,9 @@
 
 (defn p/prepare-imported
   [in-dir obj-path prefixes opts]
+  (u/maybe-dump :call "prepare-imported"
+                :in-dir in-dir :obj-path obj-path
+                :prefixes prefixes :opts opts)
   (def {:sep sep} opts)
   (eachp [path prefix] prefixes
     (def fname (string path ".janet"))
@@ -2692,6 +2699,9 @@
 
 (defn p/prepare-start
   [start-path in-name obj-path opts]
+  (u/maybe-dump :call "prepare-start"
+                :start-path start-path :in-name in-name
+                :obj-path obj-path :opts opts)
   (def {:sep sep :start-file-perm perm} opts)
   (def in-src (slurp start-path))
   (def in-tree (j/par in-src))
@@ -2778,6 +2788,7 @@
 
 (defn s/study
   [start-path]
+  (u/maybe-dump :call "study" :start-path start-path)
   (def files-and-imports (s/find-files-and-imports start-path))
   (u/maybe-dump :files-and-imports files-and-imports)
   #
@@ -2901,8 +2912,6 @@
   (def perm
     (when (not bs-land) (os/stat start-path :permissions)))
   (put opts :start-file-perm perm)
-  (u/maybe-dump :stage "study" :start-path start-path
-                :out-path out-path :obj-path obj-path)
   # study the input files starting at start-path
   (flycheck start-path)
   (def prefixes (s/study start-path))
@@ -2910,15 +2919,11 @@
   (eachp [path _] prefixes
     (def ipath (string in-dir sep path ".janet"))
     (flycheck ipath))
-  (u/maybe-dump :stage "prepare" :prefixes prefixes
-                :in-dir in-dir :in-name in-name
-                :obj-path obj-path)
   # prepare imported files: rename names and tweak import forms
   (p/prepare-imported in-dir obj-path prefixes opts)
   # prepare starting file: tweak import forms
   (def in-path (p/prepare-start start-path in-name obj-path opts))
   # link
-  (u/maybe-dump :stage "link" :in-path in-path :out-path out-path)
   (l/link in-path out-path)
   (when (not bs-land)
     (os/chmod out-path perm)))
