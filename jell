@@ -2811,9 +2811,18 @@
   (def files-and-imports (s/find-files-and-imports start-path))
   (u/maybe-dump :files-and-imports files-and-imports)
   #
+  (def seen @{})
+  #
   (def prefixes
     (reduce (fn [acc i-stats]
               (each [pth _ pfx] i-stats
+                (when (not (get seen pfx))
+                  (put seen pfx pth))
+                # same prefix should not be used by multiple paths
+                (assertf (= pth (get seen pfx))
+                         "prefix `%s` used by multiple paths: %s %s"
+                         pfx pth (get seen pfx))
+                #
                 (if-let [o-pfx (get acc pth)]
                   (assertf (= pfx o-pfx)
                            "prefixes don't match: %s != %s" pfx o-pfx)
