@@ -105,7 +105,7 @@
   #
   cur-zloc)
 
-(defn prepare
+(defn rename
   [prefix in-path out-path]
   (u/maybe-dump :call "prepare" :in-path in-path :out-path out-path)
   (def prefix-str (string prefix "/"))
@@ -133,10 +133,8 @@
       (def new-name (string prefix-str found))
       (set cur-zloc (j/replace cur-zloc [:symbol @{} new-name])))
     (set cur-zloc (j/df-next cur-zloc)))
-  # replace import forms
-  (set cur-zloc (tweak-import-forms cur-zloc))
   #
-  (spit out-path (j/gen (j/root cur-zloc))))
+  cur-zloc)
 
 (defn prepare-imported
   [in-dir obj-path prefixes opts]
@@ -148,7 +146,12 @@
     (def fname (string path ".janet"))
     (def ipath (string in-dir sep fname))
     (def opath (string obj-path sep fname))
-    (prepare prefix ipath opath)))
+    # rename some names
+    (def zloc (rename prefix ipath opath))
+    # tweak import forms
+    (def t-zloc (tweak-import-forms zloc))
+    # save
+    (spit opath (j/gen (j/root t-zloc)))))
 
 (defn prepare-start
   [start-path in-name obj-path opts]
@@ -165,6 +168,7 @@
               (eprintf "zipper creation failed for file: %s" start-path)
               (os/exit 1))))
   (def in-out-path (string obj-path sep in-name))
+  # only tweak import forms
   (spit in-out-path
         (j/gen (j/root (tweak-import-forms cur-zloc))))
   (when perm
