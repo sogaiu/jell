@@ -2,6 +2,33 @@
 (import ./jipper :prefix "")
 (import ./utils :prefix "")
 
+(defn s/check-import
+  [i-zloc a-path]
+  (def i-node (j/node i-zloc))
+  (def i-stats (c/analyze-import i-node))
+  (assertf (not (has-key? i-stats :only))
+           "import %n has :only in: %s"
+           (j/gen i-node) a-path)
+  #
+  (assertf (or (get i-stats :as) (get i-stats :prefix))
+           "import %n should have :as or :prefix in: %s"
+           (j/gen i-node) a-path)
+  #
+  (assertf (not= true (get i-stats :export))
+           "import %n has :export true in: %s"
+           (j/gen i-node) a-path)
+  #
+  (def i-path (get i-stats :path))
+  (assertf (string/has-prefix? "./" i-path)
+           "path: %s should start with `./`, but found: %s"
+           i-path a-path)
+  #
+  (assertf (= 1 (length (string/find-all "/" i-path)))
+           "path: %s is not a sibling path in: %s"
+           i-path a-path)
+  #
+  [i-stats i-path])
+
 (defn s/find-files-and-imports
   [in-path]
   # assumes paths are full paths...
@@ -44,16 +71,7 @@
             (eprintf "non-top-level import in %s at line: %d" a-path bl))
           #
           (set cur-zloc (j/df-next i-zloc))
-          (def i-node (j/node i-zloc))
-          (def i-stats (c/analyze-import i-node))
-          (assertf (not= true (get i-stats :export))
-                   "import with :export true in %s not supported: %n"
-                   a-path (j/gen i-node))
-          (def i-path (get i-stats :path))
-          (assertf (string/has-prefix? "./" i-path)
-                   "path should start with `./`, but found: %s" i-path)
-          (assertf (= 1 (length (string/find-all "/" i-path)))
-                   "only sibling files allowed: %s" i-path)
+          (def [i-stats i-path] (s/check-import i-zloc a-path))
           (def j-file (os/realpath (string i-path ".janet")))
           (def prefix
             (cond
