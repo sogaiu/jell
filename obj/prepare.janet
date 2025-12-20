@@ -86,6 +86,8 @@
   (set cur-zloc (j/zip-down (j/root cur-zloc)))
   (while (not (j/end? cur-zloc))
     (when-let [i-zloc (match (j/node cur-zloc)
+                        # XXX: assumes no whitespace or comments
+                        #      before `import` symbol
                         [:tuple _ [:symbol _ "import"]]
                         cur-zloc)
                i-node (j/node i-zloc)]
