@@ -90,13 +90,13 @@
                         cur-zloc)
                i-node (j/node i-zloc)]
       (def i-tbl (c/analyze-import i-node))
-      (assertf (get i-tbl :path)
-               "import form lacks a path: %n" i-tbl)
+      (def i-path (get i-tbl :path))
+      (assertf i-path "import form lacks a path: %n" (j/gen i-node))
       (set cur-zloc (j/replace cur-zloc
                                [:tuple @{}
                                 [:symbol @{} "import"]
                                 [:whitespace @{} " "]
-                                [:symbol @{} (get i-tbl :path)]
+                                [:symbol @{} i-path]
                                 [:whitespace @{} " "]
                                 [:keyword @{} ":prefix"]
                                 [:whitespace @{} " "]
@@ -107,7 +107,7 @@
 
 (defn rename
   [prefix in-path out-path]
-  (u/maybe-dump :call "prepare" :in-path in-path :out-path out-path)
+  (u/maybe-dump :call "rename" :in-path in-path :out-path out-path)
   (def prefix-str (string prefix "/"))
   #
   (def src (slurp in-path))
@@ -138,9 +138,8 @@
 
 (defn prepare-imported
   [in-dir obj-path prefixes opts]
-  (u/maybe-dump :call "prepare-imported"
-                :in-dir in-dir :obj-path obj-path
-                :prefixes prefixes :opts opts)
+  (u/maybe-dump :call "prepare-imported" :in-dir in-dir
+                :obj-path obj-path :prefixes prefixes :opts opts)
   (def {:sep sep} opts)
   (eachp [path prefix] prefixes
     (def fname (string path ".janet"))
@@ -155,9 +154,8 @@
 
 (defn prepare-start
   [start-path in-name obj-path opts]
-  (u/maybe-dump :call "prepare-start"
-                :start-path start-path :in-name in-name
-                :obj-path obj-path :opts opts)
+  (u/maybe-dump :call "prepare-start" :start-path start-path
+                :in-name in-name :obj-path obj-path :opts opts)
   (def {:sep sep :start-file-perm perm} opts)
   (def in-src (slurp start-path))
   (def in-tree (j/par in-src))
