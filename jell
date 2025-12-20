@@ -2498,8 +2498,8 @@
 #    right, recording the corresponding source code to out-path unless
 #    the encountered zloc has a node representing an import form.
 #
-# 2. if an import form is encountered, don't record the form in
-#    out-path, instead if the file the import form refers to has not
+# 2. if an import form is encountered, record a commented version of
+#    it in out-path, and if the file the import form refers to has not
 #    been visited, visit the file and continue recursively.
 (defn l/link
   [in-path out-path]
