@@ -31,7 +31,7 @@
    "defmacro" 1 "defmacro-" 1
    "varfn" 1})
 
-# XXX: what about defglobal and varglobal?
+# XXX: defglobal, varglobal, and defdyn are not handled
 (def def-things
   (merge non-call-things call-things))
 
