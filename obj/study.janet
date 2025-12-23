@@ -16,10 +16,10 @@
   #
   i-stats)
 
+# assumes paths are full paths...
+# XXX: could check if we had abspath?
 (defn s/find-files-and-imports
   [in-path]
-  # assumes paths are full paths...
-  # XXX: could check if we had abspath?
   (def [dir-path file-path] (u/split-path in-path))
   # remember which files have already been "imported"
   (def seen @{})
