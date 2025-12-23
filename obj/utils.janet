@@ -120,6 +120,17 @@
   (when (empty? path)
     (break @["" ""]))
   #
+  (def os (or (dyn :os-override) (os/which)))
+  (def bs-land (or (= :windows os) (= :mingw os)))
+  (def sep (if bs-land `\` "/"))
+  (def sep-idxs (string/find-all sep path))
+  (when (= 0 (length sep-idxs))
+    (break @["" path]))
+  #
+  (when (= 1 (length sep-idxs))
+    (break @[fd-path
+             (string/slice path (inc (last sep-idxs)))]))
+  #
   (def idx (inc (string/find fd-path path)))
   #
   @[fd-path
@@ -127,10 +138,23 @@
 
 (comment
 
-  # really the only case we care about
+  # one case we care about
   (u/split-path "/etc/motd")
   # =>
   @["/etc" "motd"]
+
+  # another case we care about
+  (u/split-path "/hello.janet")
+  # =>
+  @["/" "hello.janet"]
+
+  (u/split-path "./blocks/blank.html")
+  # =>
+  @["./blocks" "blank.html"]
+
+  (u/split-path "cli.janet")
+  # =>
+  @["" "cli.janet"]
 
   )
 
@@ -143,6 +167,45 @@
     # https://learn.microsoft.com/en-us/dotnet/standard/io/file-path-formats
     (truthy? (peg/match ~(sequence :a `:\`) path))
     (string/has-prefix? "/" path)))
+
+(defn u/diff-path
+  [left right]
+  (var i 0)
+  (var done false)
+  (def [shorter longer]
+    (if (<= (length left) (length right))
+      [left right]
+      [right left]))
+  (for j 0 (length shorter)
+    (when (not= (get left j) (get right j))
+      (set done true)
+      (set i j)
+      (break)))
+  (cond
+    (not done)
+    [shorter (string/slice longer (length shorter))]
+    #
+    (= 0 i)
+    ["" nil]
+    #
+    [(string/slice shorter 0 i) ""]))
+
+(comment
+
+  (u/diff-path "/usr/include"
+             "/usr/include/fstab.h")
+  # =>
+  ["/usr/include" "/fstab.h"]
+
+  (u/diff-path "/tmp" "hello")
+  # =>
+  ["" nil]
+
+  (u/diff-path "/etc/motd" "/etc/issue")
+  # =>
+  ["/etc/" ""]
+
+  )
 
 (defn u/touch
   [path]

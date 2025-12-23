@@ -2343,6 +2343,17 @@
   (when (empty? path)
     (break @["" ""]))
   #
+  (def os (or (dyn :os-override) (os/which)))
+  (def bs-land (or (= :windows os) (= :mingw os)))
+  (def sep (if bs-land `\` "/"))
+  (def sep-idxs (string/find-all sep path))
+  (when (= 0 (length sep-idxs))
+    (break @["" path]))
+  #
+  (when (= 1 (length sep-idxs))
+    (break @[fd-path
+             (string/slice path (inc (last sep-idxs)))]))
+  #
   (def idx (inc (string/find fd-path path)))
   #
   @[fd-path
@@ -2350,10 +2361,23 @@
 
 (comment
 
-  # really the only case we care about
+  # one case we care about
   (u/split-path "/etc/motd")
   # =>
   @["/etc" "motd"]
+
+  # another case we care about
+  (u/split-path "/hello.janet")
+  # =>
+  @["/" "hello.janet"]
+
+  (u/split-path "./blocks/blank.html")
+  # =>
+  @["./blocks" "blank.html"]
+
+  (u/split-path "cli.janet")
+  # =>
+  @["" "cli.janet"]
 
   )
 
@@ -2366,6 +2390,45 @@
     # https://learn.microsoft.com/en-us/dotnet/standard/io/file-path-formats
     (truthy? (peg/match ~(sequence :a `:\`) path))
     (string/has-prefix? "/" path)))
+
+(defn u/diff-path
+  [left right]
+  (var i 0)
+  (var done false)
+  (def [shorter longer]
+    (if (<= (length left) (length right))
+      [left right]
+      [right left]))
+  (for j 0 (length shorter)
+    (when (not= (get left j) (get right j))
+      (set done true)
+      (set i j)
+      (break)))
+  (cond
+    (not done)
+    [shorter (string/slice longer (length shorter))]
+    #
+    (= 0 i)
+    ["" nil]
+    #
+    [(string/slice shorter 0 i) ""]))
+
+(comment
+
+  (u/diff-path "/usr/include"
+             "/usr/include/fstab.h")
+  # =>
+  ["/usr/include" "/fstab.h"]
+
+  (u/diff-path "/tmp" "hello")
+  # =>
+  ["" nil]
+
+  (u/diff-path "/etc/motd" "/etc/issue")
+  # =>
+  ["/etc/" ""]
+
+  )
 
 (defn u/touch
   [path]
@@ -2504,6 +2567,9 @@
 (defn l/link
   [in-path out-path]
   (u/maybe-dump :call "link" :in-path in-path :out-path out-path)
+  (def os (or (dyn :os-override) (os/which)))
+  (def bs-land (or (= :windows os) (= :mingw os)))
+  (def sep (if bs-land `\` "/"))
   # assumes paths are full paths...
   # XXX: could check if we had abspath?
   (def [dir-path file-path] (u/split-path in-path))
@@ -2518,14 +2584,16 @@
     (with [out-file (file/open out-path :w)]
       (defn helper
         [a-path]
-        (when (in seen a-path) (break))
+        (def [a-dir a-name] (u/split-path a-path))
+        (def full-path (os/realpath (string (os/cwd) sep a-name)))
+        (when (in seen full-path) (break))
         #
-        (put seen a-path true)
+        (put seen full-path true)
         (var zloc
-          (try (-> (slurp a-path)
+          (try (-> (slurp full-path)
                    j/par
                    j/zip-down)
-            ([e] (errorf "failed to prepare zloc from: %s" a-path))))
+            ([e] (errorf "failed to prepare zloc from: %s" full-path))))
         (while zloc
           (def cur-node (j/node zloc))
           (if (c/is-import? zloc)
@@ -2536,11 +2604,21 @@
                                 j/node
                                 j/gen)]
               (file/write out-file commented "\n")
-              (helper (string (get i-tbl :path) ".janet")))
+              (def i-path (get i-tbl :path))
+              # parse import path
+              (def last-slash-idx (last (string/find-all "/" i-path)))
+              (assertf last-slash-idx "failed to find / in: %s" i-path)
+              (def name (string/slice i-path (inc last-slash-idx)))
+              (def dir (string/slice i-path 0 last-slash-idx))
+              (def cur-dir (os/cwd))
+              #
+              (os/cd dir)
+              (helper (string i-path ".janet"))
+              (os/cd cur-dir))
             (file/write out-file (j/gen cur-node)))
           (set zloc (j/right zloc))))
       #
-      (helper file-path)
+      (helper in-path)
       (file/flush out-file))))
 
 
@@ -2694,9 +2772,16 @@
                 :obj-path obj-path :prefixes prefixes :opts opts)
   (def {:sep sep} opts)
   (eachp [path prefix] prefixes
-    (def fname (string path ".janet"))
-    (def ipath (string in-dir sep fname))
-    (def opath (string obj-path sep fname))
+    (def [dir fname] (u/split-path path))
+    (def ipath path)
+    (def [dir rest] (u/diff-path in-dir ipath))
+    (assertf (= in-dir dir)
+             "expected in-dir = dir, but: %s %s" in-dir dir)
+    (def [subdir fname] (u/split-path rest))
+    # subdir includes sep at front
+    (def obj-dir (string obj-path subdir))
+    (os/mkdir obj-dir)
+    (def opath (string obj-dir sep fname))
     # rename some names
     (def zloc (p/rename prefix ipath opath))
     # tweak import forms
@@ -2743,24 +2828,11 @@
            "import %n has :only in: %s"
            (j/gen i-node) a-path)
   #
-  (assertf (or (get i-stats :as) (get i-stats :prefix))
-           "import %n should have :as or :prefix in: %s"
-           (j/gen i-node) a-path)
-  #
   (assertf (not= true (get i-stats :export))
            "import %n has :export true in: %s"
            (j/gen i-node) a-path)
   #
-  (def i-path (get i-stats :path))
-  (assertf (string/has-prefix? "./" i-path)
-           "path: %s should start with `./`, but found: %s"
-           i-path a-path)
-  #
-  (assertf (= 1 (length (string/find-all "/" i-path)))
-           "path: %s is not a sibling path in: %s"
-           i-path a-path)
-  #
-  [i-stats i-path])
+  i-stats)
 
 (defn s/find-files-and-imports
   [in-path]
@@ -2804,8 +2876,15 @@
             (eprintf "non-top-level import in %s at line: %d" a-path bl))
           #
           (set cur-zloc (j/df-next i-zloc))
-          (def [i-stats i-path] (s/check-import i-zloc a-path))
+          (def i-stats (s/check-import i-zloc a-path))
+          (def i-path (get i-stats :path))
           (def j-file (os/realpath (string i-path ".janet")))
+          # parse import path
+          (def last-slash-idx (last (string/find-all "/" i-path)))
+          (assertf last-slash-idx "failed to find / in: %s" i-path)
+          (def name (string/slice i-path (inc last-slash-idx)))
+          (def dir (string/slice i-path 0 last-slash-idx))
+          #
           (def prefix
             (cond
               (def as (get i-stats :as))
@@ -2813,11 +2892,15 @@
               #
               (def pfx (get i-stats :prefix))
               pfx
-              # remove leading ./
-              (string/slice i-path 2)))
+              #
+              name))
+          #
+          (def cur-dir (os/cwd))
+          (os/cd dir)
           (put imports a-path
                (array/push import-paths [i-path j-file prefix]))
-          (helper j-file))))
+          (helper j-file)
+          (os/cd cur-dir))))
     #
     (helper (os/realpath file-path))
     #
@@ -2833,18 +2916,18 @@
   #
   (def prefixes
     (reduce (fn [acc i-stats]
-              (each [pth _ pfx] i-stats
+              (each [_ fpth pfx] i-stats
                 (when (not (get seen pfx))
-                  (put seen pfx pth))
+                  (put seen pfx fpth))
                 # same prefix should not be used by multiple paths
-                (assertf (= pth (get seen pfx))
+                (assertf (= fpth (get seen pfx))
                          "prefix `%s` used by multiple paths: %s %s"
-                         pfx pth (get seen pfx))
+                         pfx fpth (get seen pfx))
                 #
-                (if-let [o-pfx (get acc pth)]
+                (if-let [o-pfx (get acc fpth)]
                   (assertf (= pfx o-pfx)
                            "prefixes don't match: %s != %s" pfx o-pfx)
-                  (put acc pth pfx)))
+                  (put acc fpth pfx)))
               acc)
             @{}
             (values files-and-imports)))
@@ -2964,8 +3047,7 @@
   (def [in-dir in-name] (u/split-path start-path))
   (when (get opts :flycheck)
     (eachp [path _] prefixes
-      (def ipath (string in-dir sep path ".janet"))
-      (flycheck ipath)))
+      (flycheck path)))
   # prepare imported files: rename names and tweak import forms
   (p/prepare-imported in-dir obj-path prefixes opts)
   # prepare starting file: tweak import forms

@@ -16,6 +16,9 @@
 (defn link
   [in-path out-path]
   (u/maybe-dump :call "link" :in-path in-path :out-path out-path)
+  (def os (or (dyn :os-override) (os/which)))
+  (def bs-land (or (= :windows os) (= :mingw os)))
+  (def sep (if bs-land `\` "/"))
   # assumes paths are full paths...
   # XXX: could check if we had abspath?
   (def [dir-path file-path] (u/split-path in-path))
@@ -30,14 +33,16 @@
     (with [out-file (file/open out-path :w)]
       (defn helper
         [a-path]
-        (when (in seen a-path) (break))
+        (def [a-dir a-name] (u/split-path a-path))
+        (def full-path (os/realpath (string (os/cwd) sep a-name)))
+        (when (in seen full-path) (break))
         #
-        (put seen a-path true)
+        (put seen full-path true)
         (var zloc
-          (try (-> (slurp a-path)
+          (try (-> (slurp full-path)
                    j/par
                    j/zip-down)
-            ([e] (errorf "failed to prepare zloc from: %s" a-path))))
+            ([e] (errorf "failed to prepare zloc from: %s" full-path))))
         (while zloc
           (def cur-node (j/node zloc))
           (if (c/is-import? zloc)
@@ -48,10 +53,20 @@
                                 j/node
                                 j/gen)]
               (file/write out-file commented "\n")
-              (helper (string (get i-tbl :path) ".janet")))
+              (def i-path (get i-tbl :path))
+              # parse import path
+              (def last-slash-idx (last (string/find-all "/" i-path)))
+              (assertf last-slash-idx "failed to find / in: %s" i-path)
+              (def name (string/slice i-path (inc last-slash-idx)))
+              (def dir (string/slice i-path 0 last-slash-idx))
+              (def cur-dir (os/cwd))
+              #
+              (os/cd dir)
+              (helper (string i-path ".janet"))
+              (os/cd cur-dir))
             (file/write out-file (j/gen cur-node)))
           (set zloc (j/right zloc))))
       #
-      (helper file-path)
+      (helper in-path)
       (file/flush out-file))))
 

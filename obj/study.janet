@@ -10,24 +10,11 @@
            "import %n has :only in: %s"
            (j/gen i-node) a-path)
   #
-  (assertf (or (get i-stats :as) (get i-stats :prefix))
-           "import %n should have :as or :prefix in: %s"
-           (j/gen i-node) a-path)
-  #
   (assertf (not= true (get i-stats :export))
            "import %n has :export true in: %s"
            (j/gen i-node) a-path)
   #
-  (def i-path (get i-stats :path))
-  (assertf (string/has-prefix? "./" i-path)
-           "path: %s should start with `./`, but found: %s"
-           i-path a-path)
-  #
-  (assertf (= 1 (length (string/find-all "/" i-path)))
-           "path: %s is not a sibling path in: %s"
-           i-path a-path)
-  #
-  [i-stats i-path])
+  i-stats)
 
 (defn s/find-files-and-imports
   [in-path]
@@ -71,8 +58,15 @@
             (eprintf "non-top-level import in %s at line: %d" a-path bl))
           #
           (set cur-zloc (j/df-next i-zloc))
-          (def [i-stats i-path] (s/check-import i-zloc a-path))
+          (def i-stats (s/check-import i-zloc a-path))
+          (def i-path (get i-stats :path))
           (def j-file (os/realpath (string i-path ".janet")))
+          # parse import path
+          (def last-slash-idx (last (string/find-all "/" i-path)))
+          (assertf last-slash-idx "failed to find / in: %s" i-path)
+          (def name (string/slice i-path (inc last-slash-idx)))
+          (def dir (string/slice i-path 0 last-slash-idx))
+          #
           (def prefix
             (cond
               (def as (get i-stats :as))
@@ -80,11 +74,15 @@
               #
               (def pfx (get i-stats :prefix))
               pfx
-              # remove leading ./
-              (string/slice i-path 2)))
+              #
+              name))
+          #
+          (def cur-dir (os/cwd))
+          (os/cd dir)
           (put imports a-path
                (array/push import-paths [i-path j-file prefix]))
-          (helper j-file))))
+          (helper j-file)
+          (os/cd cur-dir))))
     #
     (helper (os/realpath file-path))
     #
@@ -100,18 +98,18 @@
   #
   (def prefixes
     (reduce (fn [acc i-stats]
-              (each [pth _ pfx] i-stats
+              (each [_ fpth pfx] i-stats
                 (when (not (get seen pfx))
-                  (put seen pfx pth))
+                  (put seen pfx fpth))
                 # same prefix should not be used by multiple paths
-                (assertf (= pth (get seen pfx))
+                (assertf (= fpth (get seen pfx))
                          "prefix `%s` used by multiple paths: %s %s"
-                         pfx pth (get seen pfx))
+                         pfx fpth (get seen pfx))
                 #
-                (if-let [o-pfx (get acc pth)]
+                (if-let [o-pfx (get acc fpth)]
                   (assertf (= pfx o-pfx)
                            "prefixes don't match: %s != %s" pfx o-pfx)
-                  (put acc pth pfx)))
+                  (put acc fpth pfx)))
               acc)
             @{}
             (values files-and-imports)))

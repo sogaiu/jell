@@ -144,9 +144,16 @@
                 :obj-path obj-path :prefixes prefixes :opts opts)
   (def {:sep sep} opts)
   (eachp [path prefix] prefixes
-    (def fname (string path ".janet"))
-    (def ipath (string in-dir sep fname))
-    (def opath (string obj-path sep fname))
+    (def [dir fname] (u/split-path path))
+    (def ipath path)
+    (def [dir rest] (u/diff-path in-dir ipath))
+    (assertf (= in-dir dir)
+             "expected in-dir = dir, but: %s %s" in-dir dir)
+    (def [subdir fname] (u/split-path rest))
+    # subdir includes sep at front
+    (def obj-dir (string obj-path subdir))
+    (os/mkdir obj-dir)
+    (def opath (string obj-dir sep fname))
     # rename some names
     (def zloc (p/rename prefix ipath opath))
     # tweak import forms

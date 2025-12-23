@@ -115,8 +115,7 @@
   (def [in-dir in-name] (u/split-path start-path))
   (when (get opts :flycheck)
     (eachp [path _] prefixes
-      (def ipath (string in-dir sep path ".janet"))
-      (flycheck ipath)))
+      (flycheck path)))
   # prepare imported files: rename names and tweak import forms
   (p/prepare-imported in-dir obj-path prefixes opts)
   # prepare starting file: tweak import forms
