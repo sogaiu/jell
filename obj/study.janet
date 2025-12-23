@@ -61,21 +61,14 @@
           (def j-file (os/realpath (string i-path ".janet")))
           # parse import path
           (def [dir name] (u/split-path i-path))
-          #
-          (def prefix
-            (cond
-              (def as (get i-stats :as))
-              (string as)
-              #
-              (def pfx (get i-stats :prefix))
-              pfx
-              #
-              name))
+          (def prefix (cond (def as (get i-stats :as)) (string as)
+                            (def pfx (get i-stats :prefix)) pfx
+                            name))
+          (put imports a-path
+               (array/push import-paths [i-path j-file prefix]))
           #
           (def cur-dir (os/cwd))
           (os/cd dir)
-          (put imports a-path
-               (array/push import-paths [i-path j-file prefix]))
           (helper j-file)
           (os/cd cur-dir))))
     #
