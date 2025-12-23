@@ -53,10 +53,7 @@
               (file/write out-file commented "\n")
               (def i-path (get i-tbl :path))
               # parse import path
-              (def last-slash-idx (last (string/find-all "/" i-path)))
-              (assertf last-slash-idx "failed to find / in: %s" i-path)
-              (def name (string/slice i-path (inc last-slash-idx)))
-              (def dir (string/slice i-path 0 last-slash-idx))
+              (def [dir name] (u/split-path i-path))
               (def cur-dir (os/cwd))
               #
               (os/cd dir)

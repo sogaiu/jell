@@ -63,10 +63,7 @@
           (def i-path (get i-stats :path))
           (def j-file (os/realpath (string i-path ".janet")))
           # parse import path
-          (def last-slash-idx (last (string/find-all sep i-path)))
-          (assertf last-slash-idx "failed to find %s in: %s" sep i-path)
-          (def name (string/slice i-path (inc last-slash-idx)))
-          (def dir (string/slice i-path 0 last-slash-idx))
+          (def [dir name] (u/split-path i-path))
           #
           (def prefix
             (cond
