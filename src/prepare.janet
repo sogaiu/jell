@@ -142,7 +142,7 @@
   [in-dir obj-path prefixes opts]
   (u/maybe-dump :call "prepare-imported" :in-dir in-dir
                 :obj-path obj-path :prefixes prefixes :opts opts)
-  (def {:sep sep} opts)
+  (def {:sep sep} (u/get-os-bits))
   (eachp [path prefix] prefixes
     (def [dir fname] (u/split-path path))
     (def ipath path)
@@ -165,7 +165,8 @@
   [start-path in-name obj-path opts]
   (u/maybe-dump :call "prepare-start" :start-path start-path
                 :in-name in-name :obj-path obj-path :opts opts)
-  (def {:sep sep :start-file-perm perm} opts)
+  (def {:sep sep} (u/get-os-bits))
+  (def {:start-file-perm perm} opts)
   (def in-src (slurp start-path))
   (def in-tree (j/par in-src))
   (var cur-zloc nil)

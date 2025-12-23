@@ -18,6 +18,7 @@
 
 (defn find-files-and-imports
   [in-path]
+  (def {:sep sep} (u/get-os-bits))
   # assumes paths are full paths...
   # XXX: could check if we had abspath?
   (def [dir-path file-path] (u/split-path in-path))
@@ -62,8 +63,8 @@
           (def i-path (get i-stats :path))
           (def j-file (os/realpath (string i-path ".janet")))
           # parse import path
-          (def last-slash-idx (last (string/find-all "/" i-path)))
-          (assertf last-slash-idx "failed to find / in: %s" i-path)
+          (def last-slash-idx (last (string/find-all sep i-path)))
+          (assertf last-slash-idx "failed to find %s in: %s" sep i-path)
           (def name (string/slice i-path (inc last-slash-idx)))
           (def dir (string/slice i-path 0 last-slash-idx))
           #

@@ -2246,6 +2246,16 @@
 
 ########################################################################
 
+(defn u/get-os-bits
+  []
+  (def os (or (dyn :os-override) (os/which)))
+  (def bs-land (or (= :windows os) (= :mingw os)))
+  (def sep (if bs-land `\` "/"))
+  #
+  {:os os
+   :bs-land bs-land
+   :sep sep})
+
 # XXX: more edge cases to identify?
 #      * consecutive separator handling matches
 #        posix more than python / spork/path
@@ -2254,9 +2264,7 @@
   (when (empty? path)
     (break path))
   #
-  (def os (or (dyn :os-override) (os/which)))
-  (def bs-land (or (= :windows os) (= :mingw os)))
-  (def sep (if bs-land `\` "/"))
+  (def {:sep sep :bs-land bs-land} (u/get-os-bits))
   (if bs-land
     (when (peg/match ~(sequence :a `:\` -1) path)
       (break path))
@@ -2343,9 +2351,7 @@
   (when (empty? path)
     (break @["" ""]))
   #
-  (def os (or (dyn :os-override) (os/which)))
-  (def bs-land (or (= :windows os) (= :mingw os)))
-  (def sep (if bs-land `\` "/"))
+  (def {:sep sep :bs-land bs-land} (u/get-os-bits))
   (def sep-idxs (string/find-all sep path))
   (when (= 0 (length sep-idxs))
     (break @["" path]))
@@ -2567,9 +2573,7 @@
 (defn l/link
   [in-path out-path]
   (u/maybe-dump :call "link" :in-path in-path :out-path out-path)
-  (def os (or (dyn :os-override) (os/which)))
-  (def bs-land (or (= :windows os) (= :mingw os)))
-  (def sep (if bs-land `\` "/"))
+  (def {:sep sep} (u/get-os-bits))
   # assumes paths are full paths...
   # XXX: could check if we had abspath?
   (def [dir-path file-path] (u/split-path in-path))
@@ -2770,7 +2774,7 @@
   [in-dir obj-path prefixes opts]
   (u/maybe-dump :call "prepare-imported" :in-dir in-dir
                 :obj-path obj-path :prefixes prefixes :opts opts)
-  (def {:sep sep} opts)
+  (def {:sep sep} (u/get-os-bits))
   (eachp [path prefix] prefixes
     (def [dir fname] (u/split-path path))
     (def ipath path)
@@ -2793,7 +2797,8 @@
   [start-path in-name obj-path opts]
   (u/maybe-dump :call "prepare-start" :start-path start-path
                 :in-name in-name :obj-path obj-path :opts opts)
-  (def {:sep sep :start-file-perm perm} opts)
+  (def {:sep sep} (u/get-os-bits))
+  (def {:start-file-perm perm} opts)
   (def in-src (slurp start-path))
   (def in-tree (j/par in-src))
   (var cur-zloc nil)
@@ -2836,6 +2841,7 @@
 
 (defn s/find-files-and-imports
   [in-path]
+  (def {:sep sep} (u/get-os-bits))
   # assumes paths are full paths...
   # XXX: could check if we had abspath?
   (def [dir-path file-path] (u/split-path in-path))
@@ -2880,8 +2886,8 @@
           (def i-path (get i-stats :path))
           (def j-file (os/realpath (string i-path ".janet")))
           # parse import path
-          (def last-slash-idx (last (string/find-all "/" i-path)))
-          (assertf last-slash-idx "failed to find / in: %s" i-path)
+          (def last-slash-idx (last (string/find-all sep i-path)))
+          (assertf last-slash-idx "failed to find %s in: %s" sep i-path)
           (def name (string/slice i-path (inc last-slash-idx)))
           (def dir (string/slice i-path 0 last-slash-idx))
           #
@@ -2999,9 +3005,9 @@
 
 (defn get-full-paths
   [opts]
-  (def [sep start-path obj-path out-path]
-    [(get opts :sep)
-     (get opts :start-path)
+  (def {:sep sep} (u/get-os-bits))
+  (def [start-path obj-path out-path]
+    [(get opts :start-path)
      (get opts :obj-path)
      (get opts :out-path)])
   #
@@ -3032,11 +3038,7 @@
 
 (defn assimilate
   [opts]
-  (def os (os/which))
-  (def bs-land (or (= :windows os) (= :mingw os)))
-  (def sep (if bs-land `\` "/"))
-  (put opts :sep sep)
-  (put opts :bs-land bs-land)
+  (def {:bs-land bs-land} (u/get-os-bits))
   (def [start-path obj-path out-path] (get-full-paths opts))
   (def perm
     (when (not bs-land) (os/stat start-path :permissions)))

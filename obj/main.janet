@@ -67,9 +67,9 @@
 
 (defn get-full-paths
   [opts]
-  (def [sep start-path obj-path out-path]
-    [(get opts :sep)
-     (get opts :start-path)
+  (def {:sep sep} (u/get-os-bits))
+  (def [start-path obj-path out-path]
+    [(get opts :start-path)
      (get opts :obj-path)
      (get opts :out-path)])
   #
@@ -100,11 +100,7 @@
 
 (defn assimilate
   [opts]
-  (def os (os/which))
-  (def bs-land (or (= :windows os) (= :mingw os)))
-  (def sep (if bs-land `\` "/"))
-  (put opts :sep sep)
-  (put opts :bs-land bs-land)
+  (def {:bs-land bs-land} (u/get-os-bits))
   (def [start-path obj-path out-path] (get-full-paths opts))
   (def perm
     (when (not bs-land) (os/stat start-path :permissions)))

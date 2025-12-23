@@ -16,9 +16,7 @@
 (defn link
   [in-path out-path]
   (u/maybe-dump :call "link" :in-path in-path :out-path out-path)
-  (def os (or (dyn :os-override) (os/which)))
-  (def bs-land (or (= :windows os) (= :mingw os)))
-  (def sep (if bs-land `\` "/"))
+  (def {:sep sep} (u/get-os-bits))
   # assumes paths are full paths...
   # XXX: could check if we had abspath?
   (def [dir-path file-path] (u/split-path in-path))

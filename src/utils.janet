@@ -23,6 +23,16 @@
 
 ########################################################################
 
+(defn get-os-bits
+  []
+  (def os (or (dyn :os-override) (os/which)))
+  (def bs-land (or (= :windows os) (= :mingw os)))
+  (def sep (if bs-land `\` "/"))
+  #
+  {:os os
+   :bs-land bs-land
+   :sep sep})
+
 # XXX: more edge cases to identify?
 #      * consecutive separator handling matches
 #        posix more than python / spork/path
@@ -31,9 +41,7 @@
   (when (empty? path)
     (break path))
   #
-  (def os (or (dyn :os-override) (os/which)))
-  (def bs-land (or (= :windows os) (= :mingw os)))
-  (def sep (if bs-land `\` "/"))
+  (def {:sep sep :bs-land bs-land} (get-os-bits))
   (if bs-land
     (when (peg/match ~(sequence :a `:\` -1) path)
       (break path))
@@ -120,9 +128,7 @@
   (when (empty? path)
     (break @["" ""]))
   #
-  (def os (or (dyn :os-override) (os/which)))
-  (def bs-land (or (= :windows os) (= :mingw os)))
-  (def sep (if bs-land `\` "/"))
+  (def {:sep sep :bs-land bs-land} (get-os-bits))
   (def sep-idxs (string/find-all sep path))
   (when (= 0 (length sep-idxs))
     (break @["" path]))
