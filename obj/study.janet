@@ -18,7 +18,6 @@
 
 (defn s/find-files-and-imports
   [in-path]
-  (def {:sep sep} (u/get-os-bits))
   # assumes paths are full paths...
   # XXX: could check if we had abspath?
   (def [dir-path file-path] (u/split-path in-path))
