@@ -15,7 +15,7 @@
   #
   (when (or (and (not conf) (not head))
             (= head "-h") (= head "--help"))
-    (break (merge {:help true} default-opts)))
+    (break (merge {:show-help true} default-opts)))
   #
   (def opts
     (if head

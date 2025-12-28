@@ -18,7 +18,7 @@
   #
   (when (or (and (not conf) (not head))
             (= head "-h") (= head "--help"))
-    (break (merge {:help true} default-opts)))
+    (break (merge {:show-help true} default-opts)))
   #
   (def opts
     (if head
@@ -3070,7 +3070,7 @@
   (u/maybe-dump :opts opts)
   #
   (cond
-    (get opts :help)
+    (get opts :show-help)
     (print usage)
     #
     (and (get opts :start-path)

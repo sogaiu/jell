@@ -127,7 +127,7 @@
   (u/maybe-dump :opts opts)
   #
   (cond
-    (get opts :help)
+    (get opts :show-help)
     (print usage)
     #
     (and (get opts :start-path)
