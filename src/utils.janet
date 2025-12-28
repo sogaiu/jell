@@ -218,3 +218,15 @@
   (with [f (file/open path :w+)]
     true))
 
+(defn make-shebang
+  []
+  "#! /usr/bin/env janet")
+
+(comment
+
+  (make-shebang)
+  # =>
+  "#! /usr/bin/env janet"
+
+  )
+

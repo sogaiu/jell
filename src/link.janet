@@ -14,9 +14,11 @@
 #    it in out-path, and if the file the import form refers to has not
 #    been visited, visit the file and continue recursively.
 (defn link
-  [in-path out-path]
-  (u/maybe-dump :call "link" :in-path in-path :out-path out-path)
+  [in-path out-path &opt opts]
+  (u/maybe-dump :call "link" :in-path in-path :out-path out-path
+                :opts opts)
   (def {:sep sep} (u/get-os-bits))
+  (def {:add-shebang add-shebang} opts)
   # assumes paths are full paths...
   # XXX: could check if we had abspath?
   (def [dir-path file-path] (u/split-path in-path))
@@ -29,6 +31,8 @@
   #
   (defer (os/cd old-dir)
     (with [out-file (file/open out-path :w)]
+      (when add-shebang
+        (file/write out-file (u/make-shebang) "\n\n"))
       (defn helper
         [a-path]
         (def [a-dir a-name] (u/split-path a-path))

@@ -1,5 +1,3 @@
-#! /usr/bin/env janet
-
 (import ./args :prefix "")
 (import ./link :prefix "")
 (import ./prepare :prefix "")
@@ -117,7 +115,7 @@
   # prepare starting file: tweak import forms
   (def in-path (p/prepare-start start-path in-name obj-path opts))
   # link
-  (l/link in-path out-path)
+  (l/link in-path out-path opts)
   (when (not bs-land)
     (os/chmod out-path perm)))
 

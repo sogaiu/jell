@@ -44,6 +44,9 @@
   (when (nil? (get opts :flycheck))
     (put opts :flycheck (dyn :flycheck true)))
   #
+  (when (nil? (get opts :add-shebang))
+    (put opts :add-shebang (dyn :add-shebang true)))
+  #
   (when-let [start-path (get the-args 0)]
     (put opts :start-path start-path)
     (array/remove the-args 0))
