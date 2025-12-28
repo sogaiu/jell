@@ -54,7 +54,7 @@
       #
       (and is-starting-file? (c/is-version-def? zloc))
       (let [vd-form (c/make-version-def-form)]
-        (file/write out-file vd-form "\n"))
+        (file/write out-file vd-form))
       #
       (file/write out-file (j/gen cur-node)))
     (set zloc (j/right zloc))))
