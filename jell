@@ -2496,26 +2496,23 @@
   (when (not head-zloc)
     (break false))
   #
-  (def first-child-node (j/node head-zloc))
-  (when (not first-child-node)
-    (break false))
-  #
-  (def fc-node-type (get first-child-node 0))
-  (def first-non-wsc-node
+  (def [head-type _ _] (j/node head-zloc))
+  (def first-non-wsc-zloc
     (cond
-      (= :symbol fc-node-type)
-      first-child-node
+      (= :symbol head-type)
+      head-zloc
       #
-      (or (= :whitespace fc-node-type)
-          (= :comment fc-node-type))
-      (-> (j/right-skip-wsc head-zloc)
-          j/node)
+      (or (= :whitespace head-type)
+          (= :comment head-type))
+      (j/right-skip-wsc head-zloc)
       #
       nil))
-  (when (not first-non-wsc-node)
+  (when (not first-non-wsc-zloc)
     (break false))
   #
-  (when (= "import" (get first-non-wsc-node 2))
+  (def [fnw-type _ fnw-value] (j/node first-non-wsc-zloc))
+  (when (and (= :symbol fnw-type)
+             (= "import" fnw-value))
     (u/maybe-dump :is-import? (j/gen (j/node zloc)))
     true))
 
@@ -2624,30 +2621,30 @@
   (when (not head-zloc)
     (break false))
   #
-  (def first-child-node (j/node head-zloc))
-  (def fc-node-type (get first-child-node 0))
+  (def [head-type _ _] (j/node head-zloc))
   (def first-non-wsc-zloc
     (cond
-      (= :symbol fc-node-type)
+      (= :symbol head-type)
       head-zloc
       #
-      (or (= :whitespace fc-node-type)
-          (= :comment fc-node-type))
+      (or (= :whitespace head-type)
+          (= :comment head-type))
       (j/right-skip-wsc head-zloc)
       #
       nil))
   (when (not first-non-wsc-zloc)
     (break false))
   #
-  (def [_ _ fnw-type] (j/node first-non-wsc-zloc))
-  (when (not= "def" fnw-type)
+  (def [fnw-type _ fnw-value] (j/node first-non-wsc-zloc))
+  (when (not (and (= :symbol fnw-type)
+                  (= "def" fnw-value)))
     (break false))
   #
-  (def next-non-wsc-zloc (j/right-skip-wsc first-non-wsc-zloc))
-  (when (not next-non-wsc-zloc)
+  (def second-non-wsc-zloc (j/right-skip-wsc first-non-wsc-zloc))
+  (when (not second-non-wsc-zloc)
     (break false))
   #
-  (def [nnw-type _ nnw-value] (j/node next-non-wsc-zloc))
+  (def [nnw-type _ nnw-value] (j/node second-non-wsc-zloc))
   (when (and (= :symbol nnw-type)
              (= "version" nnw-value))
     (u/maybe-dump :is-version-def? (j/gen (j/node zloc)))
@@ -3065,7 +3062,7 @@
 (comment import ./utils :prefix "")
 
 
-(def version "2025-12-28_07-55-59")
+(def version "2025-12-28_09-08-00")
 
 
 (def usage
