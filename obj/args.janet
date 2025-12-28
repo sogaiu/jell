@@ -17,6 +17,10 @@
             (= head "-h") (= head "--help"))
     (break (merge {:show-help true} default-opts)))
   #
+  (when (or (and (not conf) (not head))
+            (= head "-v") (= head "--version"))
+    (break (merge {:show-version true} default-opts)))
+  #
   (def opts
     (if head
       (if-not (and (string/has-prefix? "{" head)

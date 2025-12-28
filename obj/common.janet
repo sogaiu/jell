@@ -111,3 +111,79 @@
 
   )
 
+(defn c/make-version-def-form
+  [&opt name time]
+  (default name "version")
+  #
+  (string/format `(def %s "%s")` name (u/dt-stamp time)))
+
+(comment
+
+  (c/make-version-def-form nil 0)
+  # =>
+  "(def version \"1970-01-01_00-00-00\")"
+
+  (c/make-version-def-form "my-stamp" "1234567890")
+  # =>
+  "(def my-stamp \"2009-02-13_23-31-30\")"
+
+  )
+
+(defn c/is-version-def?
+  [zloc]
+  (def node (j/node zloc))
+  (when (not= :tuple (get node 0))
+    (break false))
+  #
+  (def head-zloc (j/down zloc))
+  (when (not head-zloc)
+    (break false))
+  #
+  (def first-child-node (j/node head-zloc))
+  (def fc-node-type (get first-child-node 0))
+  (def first-non-wsc-zloc
+    (cond
+      (= :symbol fc-node-type)
+      head-zloc
+      #
+      (or (= :whitespace fc-node-type)
+          (= :comment fc-node-type))
+      (j/right-skip-wsc head-zloc)
+      #
+      nil))
+  (when (not first-non-wsc-zloc)
+    (break false))
+  #
+  (def [_ _ fnw-type] (j/node first-non-wsc-zloc))
+  (when (not= "def" fnw-type)
+    (break false))
+  #
+  (def next-non-wsc-zloc (j/right-skip-wsc first-non-wsc-zloc))
+  (when (not next-non-wsc-zloc)
+    (break false))
+  #
+  (def [nnw-type _ nnw-value] (j/node next-non-wsc-zloc))
+  (when (and (= :symbol nnw-type)
+             (= "version" nnw-value))
+    (u/maybe-dump :is-version-def? (j/gen (j/node zloc)))
+    true))
+
+(comment
+
+  (def zloc (j/zip-down (j/par `(def version "DEVEL")`)))
+
+  (j/node zloc)
+  # =>
+  [:tuple @{:bc 1 :bl 1 :ec 22 :el 1}
+   [:symbol @{:bc 2 :bl 1 :ec 5 :el 1} "def"]
+   [:whitespace @{:bc 5 :bl 1 :ec 6 :el 1} " "]
+   [:symbol @{:bc 6 :bl 1 :ec 13 :el 1} "version"]
+   [:whitespace @{:bc 13 :bl 1 :ec 14 :el 1} " "]
+   [:string @{:bc 14 :bl 1 :ec 21 :el 1} "\"DEVEL\""]]
+
+  (c/is-version-def? zloc)
+  # =>
+  true
+
+  )
+

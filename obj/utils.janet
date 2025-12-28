@@ -230,3 +230,27 @@
 
   )
 
+(defn u/dt-stamp
+  [&opt time]
+  (def dt (os/date time))
+  (def year (get dt :year))
+  (def month (inc (get dt :month)))
+  (def day (inc (get dt :month-day)))
+  (def hours (get dt :hours))
+  (def mins (get dt :minutes))
+  (def secs (get dt :seconds))
+  (string/format "%d-%02d-%02d_%02d-%02d-%02d"
+                 year month day hours mins secs))
+
+(comment
+
+  (u/dt-stamp 0)
+  # =>
+  "1970-01-01_00-00-00"
+
+  (u/dt-stamp 1234567890)
+  # =>
+  "2009-02-13_23-31-30"
+
+  )
+

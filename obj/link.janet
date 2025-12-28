@@ -13,6 +13,52 @@
 # 2. if an import form is encountered, record a commented version of
 #    it in out-path, and if the file the import form refers to has not
 #    been visited, visit the file and continue recursively.
+#
+# 3. in the case of the starting file, if a `(def version ...)` form
+#    is encountered, replace the `...` with a suitable string.
+
+(defn l/traverse
+  [a-path misc]
+  (def {:out-file out-file :sep sep :seen seen
+        :is-starting-file? is-starting-file?} misc)
+  (def [a-dir a-name] (u/split-path a-path))
+  (def full-path (os/realpath (string (os/cwd) sep a-name)))
+  (when (in seen full-path) (break))
+  #
+  (put seen full-path true)
+  (var zloc
+    (try (-> (slurp full-path)
+             j/par
+             j/zip-down)
+      ([e] (errorf "failed to prepare zloc from: %s" full-path))))
+  (while zloc
+    (def cur-node (j/node zloc))
+    (cond
+      (c/is-import? zloc)
+      (let [i-tbl (c/analyze-import cur-node)
+            commented (-> zloc
+                          (j/insert-child [:whitespace {} " "])
+                          (j/insert-child [:symbol {} "comment"])
+                          j/node
+                          j/gen)]
+        (file/write out-file commented "\n")
+        (def i-path (get i-tbl :path))
+        # parse import path
+        (def [dir name] (u/split-path i-path))
+        (def cur-dir (os/cwd))
+        #
+        (os/cd dir)
+        (l/traverse (string i-path ".janet")
+                  (merge misc {:is-starting-file? false}))
+        (os/cd cur-dir))
+      #
+      (and is-starting-file? (c/is-version-def? zloc))
+      (let [vd-form (c/make-version-def-form)]
+        (file/write out-file vd-form "\n"))
+      #
+      (file/write out-file (j/gen cur-node)))
+    (set zloc (j/right zloc))))
+
 (defn l/link
   [in-path out-path &opt opts]
   (u/maybe-dump :call "link" :in-path in-path :out-path out-path
@@ -33,39 +79,7 @@
     (with [out-file (file/open out-path :w)]
       (when add-shebang
         (file/write out-file (u/make-shebang) "\n\n"))
-      (defn helper
-        [a-path]
-        (def [a-dir a-name] (u/split-path a-path))
-        (def full-path (os/realpath (string (os/cwd) sep a-name)))
-        (when (in seen full-path) (break))
-        #
-        (put seen full-path true)
-        (var zloc
-          (try (-> (slurp full-path)
-                   j/par
-                   j/zip-down)
-            ([e] (errorf "failed to prepare zloc from: %s" full-path))))
-        (while zloc
-          (def cur-node (j/node zloc))
-          (if (c/is-import? zloc)
-            (let [i-tbl (c/analyze-import cur-node)
-                  commented (-> zloc
-                                (j/insert-child [:whitespace {} " "])
-                                (j/insert-child [:symbol {} "comment"])
-                                j/node
-                                j/gen)]
-              (file/write out-file commented "\n")
-              (def i-path (get i-tbl :path))
-              # parse import path
-              (def [dir name] (u/split-path i-path))
-              (def cur-dir (os/cwd))
-              #
-              (os/cd dir)
-              (helper (string i-path ".janet"))
-              (os/cd cur-dir))
-            (file/write out-file (j/gen cur-node)))
-          (set zloc (j/right zloc))))
-      #
-      (helper in-path)
+      (l/traverse in-path {:out-file out-file :seen seen :sep sep
+                         :is-starting-file? true})
       (file/flush out-file))))
 

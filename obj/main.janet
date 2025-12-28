@@ -4,6 +4,8 @@
 (import ./study :prefix "")
 (import ./utils :prefix "")
 
+(def version "DEVEL")
+
 (def usage
   ``
   Usage: jell [<start-path> [<out-path> [<obj-path>]]]
@@ -129,6 +131,9 @@
   (cond
     (get opts :show-help)
     (print usage)
+    #
+    (get opts :show-version)
+    (print version)
     #
     (and (get opts :start-path)
          (get opts :obj-path)
