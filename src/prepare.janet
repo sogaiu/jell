@@ -47,19 +47,21 @@
     (def [_ _ def-type] (j/node a-zloc))
     (def [_ loc _] (j/node (j/up a-zloc)))
     (match (j/node b-zloc)
-      [:symbol _ name]
+      [:symbol name-loc name]
       (array/push acc {:name name
                        :type def-type
-                       :loc loc})
+                       :loc loc
+                       :name-loc name-loc})
       #
       [node-type _ & rest]
       (when (get destruct-types node-type)
         (array/concat acc
-                      (keep (fn [[node-type _ node-value]]
+                      (keep (fn [[node-type node-loc node-value]]
                               (when (= :symbol node-type)
                                 {:name node-value
                                  :type def-type
-                                 :loc loc}))
+                                 :loc loc
+                                 :name-loc node-loc}))
                             rest)))))
   #
   acc)
@@ -107,6 +109,58 @@
   #
   cur-zloc)
 
+(defn sym-at-or-before?
+  [a-loc b-loc]
+  (def {:bl a-bl :bc a-bc :ec a-ec :el a-el} a-loc)
+  (def {:bl b-bl :bc b-bc :ec b-ec :el b-el} b-loc)
+  (assertf (and (= a-bl a-el) (= b-bl b-el))
+           "symbols must start and end on the same line: %n %n"
+           a-loc b-loc)
+  (cond
+    (not= a-bl b-bl)
+    (< a-bl b-bl)
+    # XXX: check that this really should not be <
+    (def le (<= a-ec b-bc))
+    le
+    #
+    (and (= a-bc b-bc) (= a-ec b-ec))
+    true
+    #
+    (errorf "locations should not overlap: %n %n" a-loc b-loc)))
+
+(comment
+
+  (sym-at-or-before? {:bl 1 :bc 1 :ec 1 :el 1}
+                     {:bl 2 :bc 2 :ec 2 :el 2})
+  # =>
+  true
+
+  (sym-at-or-before? {:bl 2 :bc 2 :ec 2 :el 2}
+                     {:bl 1 :bc 1 :ec 1 :el 1})
+  # =>
+  false
+
+  (sym-at-or-before? {:bl 1 :bc 1 :ec 8 :el 1}
+                     {:bl 1 :bc 1 :ec 8 :el 1})
+  # =>
+  true
+
+  (sym-at-or-before? {:bl 1 :bc 1 :ec 8 :el 1}
+                     {:bl 1 :bc 8 :ec 10 :el 1})
+  # =>
+  true
+
+  (def [ok? result]
+    (protect (sym-at-or-before? {:bl 1 :bc 1 :el 1 :ec 3}
+                                {:bl 1 :bc 2 :el 1 :ec 7})))
+
+  (and (not ok?)
+       (string/has-prefix? "locations should not" result))
+  # =>
+  true
+
+  )
+
 (defn rename
   [prefix in-path out-path]
   (u/maybe-dump :call "rename" :in-path in-path :out-path out-path)
@@ -123,15 +177,18 @@
               (os/exit 1))))
   # find top-level symbols
   (def sym-zlocs (find-top-level-syms cur-zloc))
-  (def sym-bits (reduce analyze-defish @[] sym-zlocs))
-  (def sym-tbl (invert (map |(get $ :name) sym-bits)))
+  (def def-descs (reduce analyze-defish @[] sym-zlocs))
+  (def sym-tbl (tabseq [{:name name :name-loc name-loc} :in def-descs]
+                 name name-loc))
   # if it worked before, it should work again without error
   (set cur-zloc (j/zip-down tree))
-  # rename using found top-level symbols
+  # may be rename using found top-level symbols
   (while (not (j/end? cur-zloc))
-    (when-let [found (match (j/node cur-zloc) [:symbol _ name]
-                       (when (get sym-tbl name)
-                         name))]
+    (when-let [found
+               (match (j/node cur-zloc) [:symbol curr-loc name]
+                 (when-let [def-name-loc (get sym-tbl name)
+                            _ (sym-at-or-before? def-name-loc curr-loc)]
+                   name))]
       (def new-name (string prefix-str found))
       (set cur-zloc (j/replace cur-zloc [:symbol @{} new-name])))
     (set cur-zloc (j/df-next cur-zloc)))
