@@ -77,15 +77,15 @@
   #
   (assertf (= :file (os/stat start-path :mode))
            "expected an existing file for: %s" start-path)
-  (def start-path (os/realpath (string cur-dir sep start-path)))
+  (def start-abspath (os/realpath (string cur-dir sep start-path)))
   #
   (when (not= :directory (os/stat obj-path :mode))
     (os/mkdir obj-path))
   (assertf (= :directory (os/stat obj-path :mode))
            "expected directory at: %s" obj-path)
-  (def obj-path (os/realpath (string cur-dir sep obj-path)))
+  (def obj-abspath (os/realpath (string cur-dir sep obj-path)))
   #
-  (def out-path
+  (def out-abspath
     (let [op (string cur-dir sep out-path)]
       (when (not (= :file (os/stat op :mode)))
         (u/touch op))
@@ -96,7 +96,7 @@
         op
         (os/realpath (string cur-dir sep op)))))
   #
-  [start-path obj-path out-path])
+  [start-abspath obj-abspath out-abspath])
 
 (defn assimilate
   [opts]

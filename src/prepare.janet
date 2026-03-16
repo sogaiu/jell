@@ -56,12 +56,12 @@
       [node-type _ & rest]
       (when (get destruct-types node-type)
         (array/concat acc
-                      (keep (fn [[node-type node-loc node-value]]
-                              (when (= :symbol node-type)
-                                {:name node-value
+                      (keep (fn [[a-node-type a-node-loc a-node-value]]
+                              (when (= :symbol a-node-type)
+                                {:name a-node-value
                                  :type def-type
                                  :loc loc
-                                 :name-loc node-loc}))
+                                 :name-loc a-node-loc}))
                             rest)))))
   #
   acc)
@@ -201,7 +201,6 @@
                 :obj-path obj-path :prefixes prefixes :opts opts)
   (def {:sep sep} (u/get-os-bits))
   (eachp [path prefix] prefixes
-    (def [dir fname] (u/split-path path))
     (def ipath path)
     (def [dir rest] (u/diff-path in-dir ipath))
     (assertf (= in-dir dir)
