@@ -37,14 +37,14 @@
 
   (j/node zloc)
   # =>
-  [:tuple @{:bc 1 :bl 1 :ec 27 :el 1}
-   [:symbol @{:bc 2 :bl 1 :ec 8 :el 1} "import"]
-   [:whitespace @{:bc 8 :bl 1 :ec 9 :el 1} " "]
-   [:symbol @{:bc 9 :bl 1 :ec 15 :el 1} "./args"]
-   [:whitespace @{:bc 15 :bl 1 :ec 16 :el 1} " "]
-   [:keyword @{:bc 16 :bl 1 :ec 23 :el 1} ":prefix"]
-   [:whitespace @{:bc 23 :bl 1 :ec 24 :el 1} " "]
-   [:string @{:bc 24 :bl 1 :ec 26 :el 1} `""`]]
+  [:tuple @{:bc 1 :bl 1 :bp 0 :ec 27 :el 1 :ep 26}
+   [:symbol @{:bc 2 :bl 1 :bp 1 :ec 8 :el 1 :ep 7} "import"]
+   [:whitespace @{:bc 8 :bl 1 :bp 7 :ec 9 :el 1 :ep 8} " "]
+   [:symbol @{:bc 9 :bl 1 :bp 8 :ec 15 :el 1 :ep 14} "./args"]
+   [:whitespace @{:bc 15 :bl 1 :bp 14 :ec 16 :el 1 :ep 15} " "]
+   [:keyword @{:bc 16 :bl 1 :bp 15 :ec 23 :el 1 :ep 22} ":prefix"]
+   [:whitespace @{:bc 23 :bl 1 :bp 22 :ec 24 :el 1 :ep 23} " "]
+   [:string @{:bc 24 :bl 1 :bp 23 :ec 26 :el 1 :ep 25} `""`]]
 
   (is-import? zloc)
   # =>
@@ -54,15 +54,15 @@
 
   (j/node zloc)
   # =>
-  [:tuple @{:bc 1 :bl 1 :ec 23 :el 1}
-   [:whitespace @{:bc 2 :bl 1 :ec 3 :el 1} " "]
-   [:symbol @{:bc 3 :bl 1 :ec 9 :el 1} "import"]
-   [:whitespace @{:bc 9 :bl 1 :ec 10 :el 1} " "]
-   [:symbol @{:bc 10 :bl 1 :ec 16 :el 1} "./args"]
-   [:whitespace @{:bc 16 :bl 1 :ec 17 :el 1} " "]
-   [:keyword @{:bc 17 :bl 1 :ec 20 :el 1} ":as"]
-   [:whitespace @{:bc 20 :bl 1 :ec 21 :el 1} " "]
-   [:symbol @{:bc 21 :bl 1 :ec 22 :el 1} "a"]]
+  [:tuple @{:bc 1 :bl 1 :bp 0 :ec 23 :el 1 :ep 22}
+   [:whitespace @{:bc 2 :bl 1 :bp 1 :ec 3 :el 1 :ep 2} " "]
+   [:symbol @{:bc 3 :bl 1 :bp 2 :ec 9 :el 1 :ep 8} "import"]
+   [:whitespace @{:bc 9 :bl 1 :bp 8 :ec 10 :el 1 :ep 9} " "]
+   [:symbol @{:bc 10 :bl 1 :bp 9 :ec 16 :el 1 :ep 15} "./args"]
+   [:whitespace @{:bc 16 :bl 1 :bp 15 :ec 17 :el 1 :ep 16} " "]
+   [:keyword @{:bc 17 :bl 1 :bp 16 :ec 20 :el 1 :ep 19} ":as"]
+   [:whitespace @{:bc 20 :bl 1 :bp 19 :ec 21 :el 1 :ep 20} " "]
+   [:symbol @{:bc 21 :bl 1 :bp 20 :ec 22 :el 1 :ep 21} "a"]]
 
   (is-import? zloc)
   # =>
@@ -90,7 +90,7 @@
                    [:whitespace @{:bc 15 :bl 1 :ec 16 :el 1} " "]
                    [:keyword @{:bc 16 :bl 1 :ec 23 :el 1} ":prefix"]
                    [:whitespace @{:bc 23 :bl 1 :ec 24 :el 1} " "]
-                   [:string @{:bc 24 :bl 1 :ec 26 :el 1} "\"\""]])
+                   [:string @{:bc 24 :bl 1 :ec 26 :el 1} `""`]])
   # =>
   @{:path "./args" :prefix ""}
 
@@ -171,12 +171,12 @@
 
   (j/node zloc)
   # =>
-  [:tuple @{:bc 1 :bl 1 :ec 22 :el 1}
-   [:symbol @{:bc 2 :bl 1 :ec 5 :el 1} "def"]
-   [:whitespace @{:bc 5 :bl 1 :ec 6 :el 1} " "]
-   [:symbol @{:bc 6 :bl 1 :ec 13 :el 1} "version"]
-   [:whitespace @{:bc 13 :bl 1 :ec 14 :el 1} " "]
-   [:string @{:bc 14 :bl 1 :ec 21 :el 1} "\"DEVEL\""]]
+  [:tuple @{:bc 1 :bl 1 :bp 0 :ec 22 :el 1 :ep 21}
+   [:symbol @{:bc 2 :bl 1 :bp 1 :ec 5 :el 1 :ep 4} "def"]
+   [:whitespace @{:bc 5 :bl 1 :bp 4 :ec 6 :el 1 :ep 5} " "]
+   [:symbol @{:bc 6 :bl 1 :bp 5 :ec 13 :el 1 :ep 12} "version"]
+   [:whitespace @{:bc 13 :bl 1 :bp 12 :ec 14 :el 1 :ep 13} " "]
+   [:string @{:bc 14 :bl 1 :bp 13 :ec 21 :el 1 :ep 20} `"DEVEL"`]]
 
   (is-version-def? zloc)
   # =>
