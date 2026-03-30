@@ -125,7 +125,7 @@
   )
 
 
-(comment import ./location :prefix "")
+(comment import ./locations :prefix "")
 # bl - begin line
 # bc - begin column
 # bp - begin position
@@ -641,7 +641,7 @@
   )
 
 
-(def version "2026-03-19_04-53-23")
+(def version "2026-03-23_01-50-41")
 
 # exports
 (def par l/par)
@@ -1550,6 +1550,69 @@
 
   )
 
+(defn right-from-until
+  ``
+  Call `pred` on zloc, and if it fails, successively on
+  each right sibling until a truthy result.
+
+  Return the zloc corresponding to the one which `pred`
+  returns a truthy result for, if any.  Otherwise, return
+  nil.
+  ``
+  [zloc pred]
+  (defn helper
+    [a-zloc]
+    (when-let [right-sib (right a-zloc)]
+      (if (pred right-sib)
+        right-sib
+        (helper right-sib))))
+  #
+  (if (pred zloc)
+    zloc
+    (helper zloc)))
+
+(comment
+
+  (-> [:code
+       [:bracket-tuple
+        [:number "1"] [:whitespace " "]
+        [:number "2"]]]
+      indexed-zip
+      down
+      right
+      down
+      right
+      (right-from-until |(match (node $)
+                           [:number]
+                           true
+                           #
+                           false))
+      node)
+  # =>
+  [:number "1"]
+
+  (-> [:code
+       [:tuple
+        [:comment "# hi there"] [:whitespace "\n"]
+        [:symbol "+"] [:whitespace " "]
+        [:number "1"] [:whitespace " "]
+        [:number "2"]]]
+      indexed-zip
+      down
+      right
+      down
+      right
+      (right-from-until |(match (node $)
+                           [:number]
+                           true
+                           #
+                           false))
+      node)
+  # =>
+  [:number "1"]
+
+  )
+
 (defn left-until
   ``
   Try to move left from `zloc`, calling `pred` for each
@@ -2085,6 +2148,79 @@
       left-skip-wsc)
   # =>
   nil
+
+  )
+
+(defn down-skip-wsc
+  ``
+  Try to move down from `zloc`, skipping over any whitespace
+  and comment nodes that might exist immediately after
+  moving down.
+
+  If successful in finding a non-whitespace, non-comment node,
+  return the corresponding z-location.  Otherwise, return nil.
+  ``
+  [zloc]
+  (def d-zloc (down zloc))
+  (when d-zloc
+    (if (match (node d-zloc)
+          [:whitespace]
+          true
+          #
+          [:comment]
+          true
+          #
+          false)
+      (right-skip-wsc d-zloc)
+      d-zloc)))
+
+(comment
+
+  (-> (par (string "(# hi there\n"
+                   "+ 1 2)"))
+      zip-down
+      down-skip-wsc
+      node)
+  # =>
+  [:symbol @{:bc 1 :bl 2 :bp 12 :ec 2 :el 2 :ep 13} "+"]
+
+  (-> (par (string "()"))
+      zip-down
+      down-skip-wsc
+      node)
+  # =>
+  nil
+
+  (-> (par (string "(# a comment\n"
+                   ")"))
+      zip-down
+      down-skip-wsc
+      node)
+  # =>
+  nil
+
+  (-> (par (string "( )"))
+      zip-down
+      down-skip-wsc
+      node)
+  # =>
+  nil
+
+  (-> (par (string "(\n"
+                   "# a comment\n"
+                   ")"))
+      zip-down
+      down-skip-wsc
+      node)
+  # =>
+  nil
+
+  (-> (par (string "{:a 1}"))
+      zip-down
+      down-skip-wsc
+      node)
+  # =>
+  [:keyword @{:bc 2 :bl 1 :bp 1 :ec 4 :el 1 :ep 3} ":a"]
 
   )
 
