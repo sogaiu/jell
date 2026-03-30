@@ -9,11 +9,11 @@
    :paths [["sbb.janet" "bundle/"]]}
   {:name "older-jell"
    :url "https://github.com/sogaiu/jell"
-   :tag "c951427684ae6ee64582d28309f161b12050f11d"
+   :tag "ebebec3b772078678b0e8a4c6551fcab70329a69"
    :paths [["jell" "bin/"]]}
   {:name "jipper"
    :url "https://github.com/sogaiu/jipper"
-   :tag "ed93678dac43aa25bfb60c78aad5087bbfac4bb0"
+   :tag "384d5dcfdfc2eba7ae726c8e76298e31e0b7065a"
    :paths [["jipper.janet" "src/"]]}
   {:name "niche"
    :url "https://github.com/sogaiu/niche"
